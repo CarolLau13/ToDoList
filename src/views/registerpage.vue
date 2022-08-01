@@ -21,6 +21,7 @@
             show-password
           ></el-input>
         </el-form-item>
+
         <el-form-item label="确认密码" prop="checkPass">
           <el-input
             type="password"
@@ -135,7 +136,6 @@ export default {
               password: this.ruleForm.pass,
             })
             .then((res) => {
-              console.log(res);
               if (res.data.isSuccess == true) {
                 this.$message({
                   message: "注册成功",

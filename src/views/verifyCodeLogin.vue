@@ -28,7 +28,9 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" class="login">登录</el-button>
+          <el-button type="primary" class="login" @click="submitForm"
+            >登录</el-button
+          >
         </el-form-item>
       </el-form>
     </div>
@@ -36,14 +38,16 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   name: "verifyCodeLogin",
   data() {
     var validateTel = (rule, value, callback) => {
-      if (value === "") {
-        callback(new Error("请输入手机号"));
-      } else {
+      if (this.isVaild(this.verifyCodeLogin.phoneNum)) {
         callback();
+      } else {
+        callback(new Error("请输入正确的手机号"));
       }
     };
 
@@ -111,26 +115,76 @@ export default {
       }
     },
 
+    submitForm() {
+      this.$refs.verifyCodeLogin.validate((valid) => {
+        if (valid) {
+          axios
+            .post("http://localhost:5030/phonelogin", {
+              phonenum: this.verifyCodeLogin.phoneNum,
+              code: this.verifyCodeLogin.verifyCode,
+            })
+            .then((res) => {
+              if (res.data.isSuccess == true) {
+                this.$message({
+                  message: "登录成功",
+                  type: "success",
+                });
+                this.$emit("verifyCodeLogin");
+              } else {
+                this.$message({
+                  message: res.data.message,
+                  type: "error",
+                });
+              }
+            })
+            .catch((err) => {
+              this.$message({
+                message: "网络错误",
+                type: "error",
+              });
+            });
+        }
+      });
+    },
+
     countDown() {
-      if (this.isVaild(this.verifyCodeLogin.phoneNum)) {
-        this.buttonText = "60秒";
-        this.second = 60;
-        this.isDisabled = true;
-        let stopInterval = setInterval(() => {
-          this.second--;
-          this.buttonText = this.second + "秒";
-          if (this.second == "0") {
-            this.buttonText = "发送验证码";
-            this.isDisabled = false;
-            clearInterval(stopInterval);
-          }
-        }, 1000);
-      } else {
-        this.$message({
-          message: "请输入正确的手机号",
-          type: "error",
-        });
-      }
+      this.$refs.verifyCodeLogin.validateField("phoneNum", (valid) => {
+        // console.log(valid);
+        if (!valid) {
+          axios
+            .post("http://localhost:5030/verify/sendcode", {
+              phonenum: this.verifyCodeLogin.phoneNum,
+              code: this.verifyCodeLogin.verifyCode,
+            })
+            .then((res) => {
+              if (res.data.isSuccess == true) {
+                this.$message({
+                  message: "验证码已发送",
+                  type: "success",
+                });
+              }
+            })
+            .catch((err) => {
+              this.$message({
+                message: "网路错误",
+                type: "error",
+              });
+            });
+
+          this.buttonText = "60秒";
+          this.second = 60;
+          this.isDisabled = true;
+          let stopInterval = setInterval(() => {
+            this.second--;
+            this.buttonText = this.second + "秒";
+            if (this.second == "0") {
+              this.buttonText = "发送验证码";
+              this.isDisabled = false;
+              clearInterval(stopInterval);
+            }
+          }, 1000);
+        }
+      });
     },
   },
 };

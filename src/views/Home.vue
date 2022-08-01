@@ -21,7 +21,10 @@
           :before-close="loginHandleClose"
           destroy-on-close="true"
         >
-          <login @passLogin="passLogin"></login>
+          <login
+            @passLogin="passLogin"
+            @verifyCodeLogin="verifyCodeLogin"
+          ></login>
         </el-dialog>
 
         <span class="register" @click="popRegister"> 注册</span>
@@ -142,6 +145,10 @@ export default {
   methods: {
     // 来自孙组件passwordLogin的事件
     passLogin() {
+      this.loginDialogVisible = false;
+    },
+    // 来自孙组件verifyCodeLogin的事件
+    verifyCodeLogin() {
       this.loginDialogVisible = false;
     },
     // 来自子组件registerpage的事件

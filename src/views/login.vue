@@ -1,7 +1,7 @@
 <template>
   <el-tabs v-model="activeName" @tab-click="handleClick" stretch>
     <el-tab-pane label="验证码登录" name="first">
-      <verify-code-login></verify-code-login>
+      <verify-code-login v-on="$listeners"></verify-code-login>
     </el-tab-pane>
     <el-tab-pane label="密码登录" name="second">
       <password-login v-on="$listeners"></password-login>
