@@ -88,7 +88,7 @@ export default {
                   message: "登录成功",
                   type: "success",
                 });
-                this.$emit("passLogin");
+                this.$emit("passLogin", this.passLogin.account);
               } else {
                 this.isloginLoading = false;
                 this.$message({
@@ -102,6 +102,7 @@ export default {
                 message: "网络错误",
                 type: "error",
               });
+              this.isloginLoading = false;
             });
         } else {
           this.isloginLoading = false;

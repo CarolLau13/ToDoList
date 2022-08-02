@@ -31,7 +31,10 @@
           ></el-input>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="submitForm('ruleForm')"
+          <el-button
+            type="primary"
+            @click="submitForm('ruleForm')"
+            :loading="ruleForm.isSubmitLoading"
             >提交</el-button
           >
           <el-button @click="resetForm('ruleForm')">重置</el-button>
@@ -99,6 +102,7 @@ export default {
         legalCharacter:
           "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
         allAlphabet: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        isSubmitLoading: false,
       },
       rules: {
         username: [{ validator: validateUserName, trigger: "blur" }],
@@ -128,6 +132,7 @@ export default {
       return false;
     },
     submitForm(formName) {
+      this.ruleForm.isSubmitLoading = true;
       this.$refs[formName].validate((valid) => {
         if (valid) {
           axios
@@ -143,6 +148,7 @@ export default {
                 });
                 this.$emit("registerSuccess");
               } else {
+                this.ruleForm.isSubmitLoading = false;
                 this.$message({
                   message: res.data.message,
                   type: "error",
@@ -150,12 +156,14 @@ export default {
               }
             })
             .catch((err) => {
+              this.ruleForm.isSubmitLoading = false;
               this.$message({
                 message: "网络错误",
                 type: "error",
               });
             });
         } else {
+          this.ruleForm.isSubmitLoading = false;
           console.log("error submit!!");
           return false;
         }

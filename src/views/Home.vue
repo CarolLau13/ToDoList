@@ -13,7 +13,9 @@
           @keyup.enter="addData"
         />
       </div>
-      <div class="header-right">
+
+      <!-- 登录前开始 -->
+      <div class="before-login-header-right" v-show="beforeLoginIsShow">
         <span class="login" @click="popLogin">登录</span>
         <el-dialog
           :visible.sync="loginDialogVisible"
@@ -37,6 +39,35 @@
           <registerpage @registerSuccess="registerSuccess"></registerpage>
         </el-dialog>
       </div>
+      <!-- 登录后结束 -->
+
+      <!-- 登录后开始 -->
+      <div class="after-login-header-right" v-show="afterLoginIsShow">
+        当前用户:
+        <el-dropdown>
+          <span class="el-dropdown-link"
+            >{{ currentUser }}<i class="el-icon-arrow-down el-icon--right"></i
+          ></span>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item @click.native="bindMobileNumVisible = true"
+              >绑定手机号</el-dropdown-item
+            >
+
+            <el-dropdown-item divided @click.native="logout"
+              >退出登录</el-dropdown-item
+            >
+          </el-dropdown-menu>
+        </el-dropdown>
+        <el-dialog
+          :visible.sync="bindMobileNumVisible"
+          width="40%"
+          :before-close="bindMobileNumHandleClose"
+          destroy-on-close="true"
+        >
+          <bind-mobile-num></bind-mobile-num>
+        </el-dialog>
+      </div>
+      <!-- 登录后结束 -->
     </div>
     <!-- header部分结束 -->
 
@@ -109,12 +140,15 @@
 <script>
 import login from "./login.vue";
 import registerpage from "./registerpage.vue";
+import bindMobileNum from "./bindMobileNum.vue";
+import axios from "axios";
 
 export default {
   name: "Home",
   components: {
     login,
     registerpage,
+    bindMobileNum,
   },
   data() {
     return {
@@ -124,6 +158,10 @@ export default {
       isSame: false,
       loginDialogVisible: false,
       registerDialogVisible: false,
+      currentUser: "",
+      beforeLoginIsShow: true,
+      afterLoginIsShow: false,
+      bindMobileNumVisible: false,
     };
   },
   created() {
@@ -143,13 +181,51 @@ export default {
     },
   },
   methods: {
+    // 来自子组件bindMobileNum的事件
+    bindMobileNumSuccess() {
+      this.bindMobileNumVisible = false;
+    },
+    // 退出登录
+    logout() {
+      this.$confirm("确认退出登录?", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
+      })
+        .then(() => {
+          axios
+            .post("http://localhost:5030/logout")
+            .then((res) => {
+              this.$message({
+                type: "success",
+                message: "登出成功!",
+              });
+              this.beforeLoginIsShow = true;
+              this.afterLoginIsShow = false;
+            })
+            .catch((err) => {
+              this.$message({
+                type: "error",
+                message: "登出失败!",
+              });
+            });
+        })
+        .catch(() => {});
+    },
     // 来自孙组件passwordLogin的事件
-    passLogin() {
+    passLogin(username) {
       this.loginDialogVisible = false;
+      this.currentUser = username;
+      this.beforeLoginIsShow = false;
+      this.afterLoginIsShow = true;
+      // console.log(username);
     },
     // 来自孙组件verifyCodeLogin的事件
-    verifyCodeLogin() {
+    verifyCodeLogin(username) {
       this.loginDialogVisible = false;
+      this.currentUser = username;
+      this.beforeLoginIsShow = false;
+      this.afterLoginIsShow = true;
     },
     // 来自子组件registerpage的事件
     registerSuccess() {
@@ -169,6 +245,13 @@ export default {
         .catch((_) => {});
     },
     registerHandleClose(done) {
+      this.$confirm("确认关闭？")
+        .then((_) => {
+          done();
+        })
+        .catch((_) => {});
+    },
+    bindMobileNumHandleClose(done) {
       this.$confirm("确认关闭？")
         .then((_) => {
           done();
@@ -245,11 +328,26 @@ export default {
   background-color: #323232;
 }
 
-.header-right {
+.before-login-header-right {
   position: absolute;
   top: 18px;
   right: 15px;
   color: #ddd;
+}
+
+.after-login-header-right {
+  position: absolute;
+  top: 18px;
+  right: 15px;
+  color: #ddd;
+}
+
+.el-dropdown-link {
+  cursor: pointer;
+  color: #fcd07f;
+}
+.el-icon-arrow-down {
+  font-size: 12px;
 }
 
 .register {

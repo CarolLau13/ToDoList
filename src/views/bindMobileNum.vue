@@ -1,6 +1,7 @@
 <template>
-  <div id="verifyCodeLogin">
+  <div id="bindMobileNum">
     <div class="content">
+      <h2>绑定手机号</h2>
       <el-form :model="verifyCodeLogin" :rules="rules" ref="verifyCodeLogin">
         <el-form-item prop="phoneNum" class="telNum">
           <el-input
@@ -28,12 +29,8 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button
-            type="primary"
-            class="login"
-            @click="submitForm"
-            :loading="isloginLoading"
-            >登录</el-button
+          <el-button type="primary" class="confirm" @click="submitForm"
+            >确认</el-button
           >
         </el-form-item>
       </el-form>
@@ -45,7 +42,7 @@
 import axios from "axios";
 
 export default {
-  name: "verifyCodeLogin",
+  name: "bindMobileNum",
   data() {
     var validateTel = (rule, value, callback) => {
       if (this.isVaild(this.verifyCodeLogin.phoneNum)) {
@@ -78,7 +75,6 @@ export default {
 
       telNum: 0,
       num: "0123456789",
-      isloginLoading: false,
     };
   },
   methods: {
@@ -121,23 +117,21 @@ export default {
     },
 
     submitForm() {
-      this.isloginLoading = true;
       this.$refs.verifyCodeLogin.validate((valid) => {
         if (valid) {
           axios
-            .post("http://localhost:5030/phonelogin", {
+            .post("http://localhost:5030/bindingphone", {
               phonenum: this.verifyCodeLogin.phoneNum,
               code: this.verifyCodeLogin.verifyCode,
             })
             .then((res) => {
               if (res.data.isSuccess == true) {
                 this.$message({
-                  message: "登录成功",
+                  message: "绑定成功",
                   type: "success",
                 });
-                this.$emit("verifyCodeLogin", res.data.message);
+                this.$emit("bindMobileNumSuccess");
               } else {
-                this.isloginLoading = false;
                 this.$message({
                   message: res.data.message,
                   type: "error",
@@ -145,14 +139,11 @@ export default {
               }
             })
             .catch((err) => {
-              this.isloginLoading = false;
               this.$message({
                 message: "网络错误",
                 type: "error",
               });
             });
-        } else {
-          this.isloginLoading = false;
         }
       });
     },
@@ -225,7 +216,7 @@ export default {
   font-weight: normal;
 }
 
-.login {
+.confirm {
   display: block;
   width: 100%;
 }
