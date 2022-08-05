@@ -171,6 +171,13 @@ export default {
 
     let doneListObj = JSON.parse(localStorage.getItem("doneList"));
     this.doneList = doneListObj;
+
+    let hasUserName = localStorage.getItem("username");
+    if (hasUserName) {
+      this.beforeLoginIsShow = false;
+      this.afterLoginIsShow = true;
+      this.currentUser = hasUserName;
+    }
   },
   computed: {
     toDoListNum() {
@@ -181,6 +188,12 @@ export default {
     },
   },
   methods: {
+    // 登录后保存用户名到localStorage
+    afterLogin() {
+      let saveCurrentUserName = this.currentUser;
+      localStorage.setItem("username", saveCurrentUserName);
+    },
+
     // 来自子组件bindMobileNum的事件
     bindMobileNumSuccess() {
       this.bindMobileNumVisible = false;
@@ -202,6 +215,7 @@ export default {
               });
               this.beforeLoginIsShow = true;
               this.afterLoginIsShow = false;
+              localStorage.removeItem("username");
             })
             .catch((err) => {
               this.$message({
@@ -218,6 +232,7 @@ export default {
       this.currentUser = username;
       this.beforeLoginIsShow = false;
       this.afterLoginIsShow = true;
+      this.afterLogin();
       // console.log(username);
     },
     // 来自孙组件verifyCodeLogin的事件
@@ -226,6 +241,7 @@ export default {
       this.currentUser = username;
       this.beforeLoginIsShow = false;
       this.afterLoginIsShow = true;
+      this.afterLogin();
     },
     // 来自子组件registerpage的事件
     registerSuccess() {

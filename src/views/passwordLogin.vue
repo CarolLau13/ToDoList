@@ -16,6 +16,7 @@
             placeholder="密码"
             prefix-icon="el-icon-lock"
             v-model="passLogin.password"
+            show-password
           >
           </el-input>
         </el-form-item>

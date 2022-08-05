@@ -162,7 +162,7 @@ export default {
         // console.log(valid);
         if (!valid) {
           axios
-            .post("http://localhost:5030/verify/sendcode", {
+            .post("/api/verify/sendcode", {
               phonenum: this.verifyCodeLogin.phoneNum,
               code: this.verifyCodeLogin.verifyCode,
             })
