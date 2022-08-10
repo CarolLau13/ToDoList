@@ -1,5 +1,9 @@
 <template>
-  <div id="home">
+  <div
+    id="home"
+    v-loading.fullscreen.lock="fullscreenLoading"
+    element-loading-text="拼命加载中"
+  >
     <!-- header部分开始 -->
     <div class="header">
       <div class="wrapper w">
@@ -155,6 +159,8 @@ export default {
       listItem: "",
       toDoList: [],
       doneList: [],
+      toDoListId: [],
+      doneListId: [],
       isSame: false,
       loginDialogVisible: false,
       registerDialogVisible: false,
@@ -162,21 +168,22 @@ export default {
       beforeLoginIsShow: true,
       afterLoginIsShow: false,
       bindMobileNumVisible: false,
+      fullscreenLoading: false,
     };
   },
   created() {
-    // console.log(localStorage.getItem("toDoList"));
-    let toDoListObj = JSON.parse(localStorage.getItem("toDoList"));
-    this.toDoList = toDoListObj;
-
-    let doneListObj = JSON.parse(localStorage.getItem("doneList"));
-    this.doneList = doneListObj;
-
     let hasUserName = localStorage.getItem("username");
     if (hasUserName) {
       this.beforeLoginIsShow = false;
       this.afterLoginIsShow = true;
       this.currentUser = hasUserName;
+      this.getAllToDo();
+    } else {
+      let toDoListObj = JSON.parse(localStorage.getItem("toDoList"));
+      this.toDoList = toDoListObj;
+
+      let doneListObj = JSON.parse(localStorage.getItem("doneList"));
+      this.doneList = doneListObj;
     }
   },
   computed: {
@@ -188,10 +195,87 @@ export default {
     },
   },
   methods: {
+    // 判断新增的todo是否全为空格
+    isAllBlank() {
+      for (let i = 0; i < this.listItem.length; i++) {
+        if (this.listItem[i] !== " ") {
+          return false;
+        }
+      }
+      return true;
+    },
+    // 发送网络请求获取所有待办和已办事项并渲染到页面
+    getAllToDo() {
+      axios
+        .get("/api/alltodos")
+        .then((res) => {
+          this.toDoList = [];
+          this.doneList = [];
+          this.toDoListId = [];
+          this.doneListId = [];
+
+          for (let i = 0; i < res.data.length; i++) {
+            if (res.data[i].todoStatus == 0) {
+              this.toDoList.push(res.data[i].content);
+              this.toDoListId.push(res.data[i].id);
+            } else if (res.data[i].todoStatus == 1) {
+              this.doneList.push(res.data[i].content);
+              this.doneListId.push(res.data[i].id);
+            }
+          }
+          this.fullscreenLoading = false;
+        })
+        .catch((err) => {
+          if (err.response.status == 401) {
+            this.$message({
+              type: "error",
+              message: "登录过期，请重新登录再试",
+            });
+            this.fullscreenLoading = false;
+            this.beforeLoginIsShow = true;
+            this.afterLoginIsShow = false;
+            localStorage.removeItem("username");
+          } else {
+            this.$message({
+              type: "error",
+              message: "网络错误",
+            });
+          }
+        });
+    },
+    // 登录后发送localStorage数据到后端
+    sendData() {
+      let listArr = [];
+      for (let i = 0; i < this.toDoList.length; i++) {
+        let obj = {};
+        obj.content = this.toDoList[i];
+        obj.todoStatus = 0;
+        listArr.push(obj);
+      }
+      for (let j = 0; j < this.doneList.length; j++) {
+        let obj = {};
+        obj.content = this.doneList[j];
+        obj.todoStatus = 1;
+        listArr.push(obj);
+      }
+      axios
+        .post("/api/batchsave", listArr)
+        .then((res) => {
+          localStorage.setItem("toDoList", "[]");
+          localStorage.setItem("doneList", "[]");
+          this.getAllToDo();
+        })
+        .catch((err) => {
+          // console.log(err);
+          this.$message({
+            type: "error",
+            message: "网络错误，请重新登录再试",
+          });
+        });
+    },
     // 登录后保存用户名到localStorage
     afterLogin() {
-      let saveCurrentUserName = this.currentUser;
-      localStorage.setItem("username", saveCurrentUserName);
+      localStorage.setItem("username", this.currentUser);
     },
 
     // 来自子组件bindMobileNum的事件
@@ -218,10 +302,21 @@ export default {
               localStorage.removeItem("username");
             })
             .catch((err) => {
-              this.$message({
-                type: "error",
-                message: "登出失败!",
-              });
+              if (err.response.status == 401) {
+                this.$message({
+                  type: "error",
+                  message: "登录过期，请重新登录再试",
+                });
+                this.fullscreenLoading = false;
+                this.beforeLoginIsShow = true;
+                this.afterLoginIsShow = false;
+                localStorage.removeItem("username");
+              } else {
+                this.$message({
+                  type: "error",
+                  message: "网络错误",
+                });
+              }
             });
         })
         .catch(() => {});
@@ -233,7 +328,7 @@ export default {
       this.beforeLoginIsShow = false;
       this.afterLoginIsShow = true;
       this.afterLogin();
-      // console.log(username);
+      this.sendData();
     },
     // 来自孙组件verifyCodeLogin的事件
     verifyCodeLogin(username) {
@@ -242,6 +337,7 @@ export default {
       this.beforeLoginIsShow = false;
       this.afterLoginIsShow = true;
       this.afterLogin();
+      this.sendData();
     },
     // 来自子组件registerpage的事件
     registerSuccess() {
@@ -289,12 +385,46 @@ export default {
         this.isSame = false;
       } else {
         if (this.listItem.length !== 0) {
-          this.toDoList.push(this.listItem);
-          // console.log(JSON.stringify(this.toDoList));
-          let addNewItem = JSON.stringify(this.toDoList);
-          localStorage.setItem("toDoList", addNewItem);
-          this.listItem = "";
-          this.isSame = false;
+          if (this.isAllBlank()) {
+            this.$message.error("待办事项不能为空");
+            return;
+          }
+          this.currentUser = localStorage.getItem("username");
+          if (this.currentUser == "") {
+            this.toDoList.push(this.listItem);
+            // console.log(JSON.stringify(this.toDoList));
+            let addNewItem = JSON.stringify(this.toDoList);
+            localStorage.setItem("toDoList", addNewItem);
+            this.listItem = "";
+          } else {
+            this.fullscreenLoading = true;
+            let obj = {};
+            obj.content = this.listItem;
+            this.listItem = "";
+            axios
+              .post("/api/addtodo", obj)
+              .then((res) => {
+                this.getAllToDo();
+              })
+              .catch((err) => {
+                // console.log(err.response.status);
+                if (err.response.status == 401) {
+                  this.$message({
+                    type: "error",
+                    message: "网络错误，请重新登录再试",
+                  });
+                  this.fullscreenLoading = false;
+                  this.beforeLoginIsShow = true;
+                  this.afterLoginIsShow = false;
+                  localStorage.removeItem("username");
+                } else {
+                  this.$message({
+                    type: "error",
+                    message: "网络错误",
+                  });
+                }
+              });
+          }
         } else {
           this.$message.error("待办事项不能为空");
         }
@@ -303,34 +433,156 @@ export default {
 
     // 本地储存
     complete(index) {
-      // console.log(this.toDoList[index]);
-      this.doneList.push(this.toDoList[index]);
-      this.toDoList.splice(index, 1);
+      this.currentUser = localStorage.getItem("username");
+      if (this.currentUser == "") {
+        this.doneList.push(this.toDoList[index]);
+        this.toDoList.splice(index, 1);
 
-      let completeToDoList = JSON.stringify(this.toDoList);
-      localStorage.setItem("toDoList", completeToDoList);
-      let addDoneList = JSON.stringify(this.doneList);
-      localStorage.setItem("doneList", addDoneList);
+        let completeToDoList = JSON.stringify(this.toDoList);
+        localStorage.setItem("toDoList", completeToDoList);
+        let addDoneList = JSON.stringify(this.doneList);
+        localStorage.setItem("doneList", addDoneList);
+      } else {
+        this.fullscreenLoading = true;
+        axios
+          .post("/api/completetodo", {
+            Id: this.toDoListId[index],
+            content: this.toDoList[index],
+          })
+          .then((res) => {
+            this.getAllToDo();
+          })
+          .catch((err) => {
+            this.fullscreenLoading = false;
+            if (err.response.status == 401) {
+              this.$message({
+                type: "error",
+                message: "登录过期，请重新登录再试",
+              });
+              this.fullscreenLoading = false;
+              this.beforeLoginIsShow = true;
+              this.afterLoginIsShow = false;
+              localStorage.removeItem("username");
+            } else {
+              this.$message({
+                type: "error",
+                message: "网络错误",
+              });
+            }
+          });
+      }
     },
     notComplete(index) {
-      this.toDoList.push(this.doneList[index]);
-      this.doneList.splice(index, 1);
+      this.currentUser = localStorage.getItem("username");
+      if (this.currentUser == "") {
+        this.toDoList.push(this.doneList[index]);
+        this.doneList.splice(index, 1);
 
-      let notCompleteDoneList = JSON.stringify(this.doneList);
-      localStorage.setItem("doneList", notCompleteDoneList);
-      let addToDoList = JSON.stringify(this.toDoList);
-      localStorage.setItem("toDoList", addToDoList);
+        let notCompleteDoneList = JSON.stringify(this.doneList);
+        localStorage.setItem("doneList", notCompleteDoneList);
+        let addToDoList = JSON.stringify(this.toDoList);
+        localStorage.setItem("toDoList", addToDoList);
+      } else {
+        (this.fullscreenLoading = true),
+          axios
+            .post("/api/undotodo", {
+              id: this.doneListId[index],
+              content: this.doneList[index],
+            })
+            .then((res) => {
+              this.getAllToDo();
+            })
+            .catch((err) => {
+              this.fullscreenLoading = false;
+              if (err.response.status == 401) {
+                this.$message({
+                  type: "error",
+                  message: "登录过期，请重新登录再试",
+                });
+                this.fullscreenLoading = false;
+                this.beforeLoginIsShow = true;
+                this.afterLoginIsShow = false;
+                localStorage.removeItem("username");
+              } else {
+                this.$message({
+                  type: "error",
+                  message: "网络错误",
+                });
+              }
+            });
+      }
     },
     deleteToDoList(index) {
-      this.toDoList.splice(index, 1);
-      // console.log(this.toDoList);
-      let deleteToDoListJson = JSON.stringify(this.toDoList);
-      localStorage.setItem("toDoList", deleteToDoListJson);
+      this.currentUser = localStorage.getItem("username");
+      if (this.currentUser == "") {
+        this.toDoList.splice(index, 1);
+        let deleteToDoListJson = JSON.stringify(this.toDoList);
+        localStorage.setItem("toDoList", deleteToDoListJson);
+      } else {
+        this.fullscreenLoading = true;
+        axios
+          .post("/api/deltodo", {
+            id: this.toDoListId[index],
+            content: this.toDoList[index],
+          })
+          .then((res) => {
+            this.getAllToDo();
+          })
+          .catch((err) => {
+            this.fullscreenLoading = false;
+            if (err.response.status == 401) {
+              this.$message({
+                type: "error",
+                message: "登录过期，请重新登录再试",
+              });
+              this.fullscreenLoading = false;
+              this.beforeLoginIsShow = true;
+              this.afterLoginIsShow = false;
+              localStorage.removeItem("username");
+            } else {
+              this.$message({
+                type: "error",
+                message: "网络错误",
+              });
+            }
+          });
+      }
     },
     deleteDoneList(index) {
-      this.doneList.splice(index, 1);
-      let deleteDoneListJson = JSON.stringify(this.doneList);
-      localStorage.setItem("doneList", deleteDoneListJson);
+      this.currentUser = localStorage.getItem("username");
+      if (this.currentUser == "") {
+        this.doneList.splice(index, 1);
+        let deleteDoneListJson = JSON.stringify(this.doneList);
+        localStorage.setItem("doneList", deleteDoneListJson);
+      } else {
+        this.fullscreenLoading = true;
+        axios
+          .post("/api/deltodo", {
+            id: this.doneListId[index],
+            content: this.doneList[index],
+          })
+          .then((res) => {
+            this.getAllToDo();
+          })
+          .catch((err) => {
+            this.fullscreenLoading = false;
+            if (err.response.status == 401) {
+              this.$message({
+                type: "error",
+                message: "登录过期，请重新登录再试",
+              });
+              this.fullscreenLoading = false;
+              this.beforeLoginIsShow = true;
+              this.afterLoginIsShow = false;
+              localStorage.removeItem("username");
+            } else {
+              this.$message({
+                type: "error",
+                message: "网络错误",
+              });
+            }
+          });
+      }
     },
   },
 };
