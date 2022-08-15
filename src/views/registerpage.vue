@@ -136,7 +136,7 @@ export default {
       this.$refs[formName].validate((valid) => {
         if (valid) {
           axios
-            .post("http://localhost:5030/account/register", {
+            .post("/api/account/register", {
               username: this.ruleForm.username,
               password: this.ruleForm.pass,
             })

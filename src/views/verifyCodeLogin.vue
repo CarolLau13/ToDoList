@@ -125,7 +125,7 @@ export default {
       this.$refs.verifyCodeLogin.validate((valid) => {
         if (valid) {
           axios
-            .post("http://localhost:5030/phonelogin", {
+            .post("/api/phonelogin", {
               phonenum: this.verifyCodeLogin.phoneNum,
               code: this.verifyCodeLogin.verifyCode,
             })

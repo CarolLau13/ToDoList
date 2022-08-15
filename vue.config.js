@@ -5,7 +5,7 @@ module.exports = defineConfig({
   devServer: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5030',
+        target: 'http://mharry.eastasia.cloudapp.azure.com:8080',
         pathRewrite: { '^/api': '' },
         changeOrigin: true,
       }

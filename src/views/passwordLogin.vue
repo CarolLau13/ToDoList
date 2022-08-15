@@ -70,15 +70,12 @@ export default {
     };
   },
   methods: {
-    register() {
-      this.$router.push("/registerpage");
-    },
     login() {
       this.isloginLoading = true;
       this.$refs.passLogin.validate((valid) => {
         if (valid) {
           axios
-            .post("http://localhost:5030/passwordlogin", {
+            .post("/api/passwordlogin", {
               userName: this.passLogin.account,
               password: this.passLogin.password,
             })

@@ -291,7 +291,7 @@ export default {
       })
         .then(() => {
           axios
-            .post("http://localhost:5030/logout")
+            .post("/api/logout")
             .then((res) => {
               this.$message({
                 type: "success",
@@ -299,6 +299,8 @@ export default {
               });
               this.beforeLoginIsShow = true;
               this.afterLoginIsShow = false;
+              this.toDoList = [];
+              this.doneList = [];
               localStorage.removeItem("username");
             })
             .catch((err) => {
@@ -483,33 +485,33 @@ export default {
         let addToDoList = JSON.stringify(this.toDoList);
         localStorage.setItem("toDoList", addToDoList);
       } else {
-        (this.fullscreenLoading = true),
-          axios
-            .post("/api/undotodo", {
-              id: this.doneListId[index],
-              content: this.doneList[index],
-            })
-            .then((res) => {
-              this.getAllToDo();
-            })
-            .catch((err) => {
+        this.fullscreenLoading = true;
+        axios
+          .post("/api/undotodo", {
+            id: this.doneListId[index],
+            content: this.doneList[index],
+          })
+          .then((res) => {
+            this.getAllToDo();
+          })
+          .catch((err) => {
+            this.fullscreenLoading = false;
+            if (err.response.status == 401) {
+              this.$message({
+                type: "error",
+                message: "登录过期，请重新登录再试",
+              });
               this.fullscreenLoading = false;
-              if (err.response.status == 401) {
-                this.$message({
-                  type: "error",
-                  message: "登录过期，请重新登录再试",
-                });
-                this.fullscreenLoading = false;
-                this.beforeLoginIsShow = true;
-                this.afterLoginIsShow = false;
-                localStorage.removeItem("username");
-              } else {
-                this.$message({
-                  type: "error",
-                  message: "网络错误",
-                });
-              }
-            });
+              this.beforeLoginIsShow = true;
+              this.afterLoginIsShow = false;
+              localStorage.removeItem("username");
+            } else {
+              this.$message({
+                type: "error",
+                message: "网络错误",
+              });
+            }
+          });
       }
     },
     deleteToDoList(index) {
