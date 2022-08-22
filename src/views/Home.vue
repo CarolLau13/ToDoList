@@ -180,14 +180,23 @@ export default {
       this.getAllToDo();
     } else {
       let toDoListObj = JSON.parse(localStorage.getItem("toDoList"));
-      this.toDoList = toDoListObj;
+      if (toDoListObj == null) {
+        this.toDoList = [];
+      } else {
+        this.toDoList = toDoListObj;
+      }
 
       let doneListObj = JSON.parse(localStorage.getItem("doneList"));
-      this.doneList = doneListObj;
+      if (doneListObj == null) {
+        this.doneList = [];
+      } else {
+        this.doneList = doneListObj;
+      }
     }
   },
   computed: {
     toDoListNum() {
+      console.log(this.toDoList);
       return this.toDoList.length;
     },
     doneListNum() {
