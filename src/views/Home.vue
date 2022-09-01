@@ -401,7 +401,7 @@ export default {
             return;
           }
           this.currentUser = localStorage.getItem("username");
-          if (this.currentUser == "") {
+          if (this.currentUser == "" || this.currentUser == null) {
             this.toDoList.push(this.listItem);
             // console.log(JSON.stringify(this.toDoList));
             let addNewItem = JSON.stringify(this.toDoList);
@@ -445,7 +445,7 @@ export default {
     // 本地储存
     complete(index) {
       this.currentUser = localStorage.getItem("username");
-      if (this.currentUser == "") {
+      if (this.currentUser == "" || this.currentUser == null) {
         this.doneList.push(this.toDoList[index]);
         this.toDoList.splice(index, 1);
 
@@ -485,7 +485,7 @@ export default {
     },
     notComplete(index) {
       this.currentUser = localStorage.getItem("username");
-      if (this.currentUser == "") {
+      if (this.currentUser == "" || this.currentUser == null) {
         this.toDoList.push(this.doneList[index]);
         this.doneList.splice(index, 1);
 
@@ -525,7 +525,7 @@ export default {
     },
     deleteToDoList(index) {
       this.currentUser = localStorage.getItem("username");
-      if (this.currentUser == "") {
+      if (this.currentUser == "" || this.currentUser == null) {
         this.toDoList.splice(index, 1);
         let deleteToDoListJson = JSON.stringify(this.toDoList);
         localStorage.setItem("toDoList", deleteToDoListJson);
@@ -561,7 +561,7 @@ export default {
     },
     deleteDoneList(index) {
       this.currentUser = localStorage.getItem("username");
-      if (this.currentUser == "") {
+      if (this.currentUser == "" || this.currentUser == null) {
         this.doneList.splice(index, 1);
         let deleteDoneListJson = JSON.stringify(this.doneList);
         localStorage.setItem("doneList", deleteDoneListJson);
